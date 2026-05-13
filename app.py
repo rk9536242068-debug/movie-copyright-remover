@@ -5,7 +5,7 @@ import os
 st.set_page_config(page_title="Movie Copyright Shield", layout="centered")
 
 st.title("🎬 Movie Copyright Shield")
-st.info("Ismein Flip + Crop + Logo Blur sab ek saath hoga.")
+st.info("Mirror + Zoom + Logo Blur Active")
 
 uploaded_file = st.file_uploader("Apni Movie Select Karein", type=['mp4', 'mkv', 'avi'])
 
@@ -18,39 +18,40 @@ if uploaded_file is not None:
     
     if st.button("Start Processing"):
         with st.spinner("Processing... Ismein thoda samay lagega."):
-            # Command explain: 
-            # hflip = Mirror
-            # crop = Zoom/Crop
-            # delogo = Logo area ko blur karna (x, y, w, h settings)
+            # Code fix: Simplified filters to avoid status 8 error
             filters = (
                 "hflip,"
-                "crop=iw*0.9:ih*0.9,"
-                "delogo=x=0:y=0:w=iw/4:h=ih/8:band=1," # Left Top Blur
-                "delogo=x=iw-iw/4:y=0:w=iw/4:h=ih/8:band=1" # Right Top Blur
+                "crop=iw*0.8:ih*0.8,"
+                "boxblur=10:5:enable='between(t,0,1000)'" # Sabse safe blur method
             )
             
             cmd = [
                 'ffmpeg', '-y', '-i', input_path,
-                '-vf', filters,
+                '-vf', "hflip,crop=iw*0.9:ih*0.9,boxblur=20:enable='y<ih/6'", # Sirf top area blur karega
                 '-af', "atempo=1.05",
                 '-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '28', '-c:a', 'aac',
                 output_path
             ]
             
             try:
-                subprocess.run(cmd, check=True)
+                # Running with shell=False for better error handling
+                result = subprocess.run(cmd, capture_output=True, text=True)
                 
-                with open(output_path, "rb") as f:
-                    st.download_button(
-                        label="Download Cleaned Movie",
-                        data=f,
-                        file_name="cleaned_movie.mp4",
-                        mime="video/mp4"
-                    )
-                st.success("Kaam ho gaya! Dono corners blur ho gaye hain.")
+                if result.returncode != 0:
+                    st.error(f"FFmpeg Error: {result.stderr}")
+                else:
+                    with open(output_path, "rb") as f:
+                        st.download_button(
+                            label="Download Cleaned Movie",
+                            data=f,
+                            file_name="cleaned_movie.mp4",
+                            mime="video/mp4"
+                        )
+                    st.success("Kaam ho gaya! Video download ke liye taiyar hai.")
                 
             except Exception as e:
-                st.error(f"Error: {e}")
+                st.error(f"System Error: {e}")
             finally:
                 if os.path.exists(input_path): os.remove(input_path)
                 if os.path.exists(output_path): os.remove(output_path)
+
