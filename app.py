@@ -2,54 +2,58 @@ import streamlit as st
 import subprocess
 import os
 
-st.set_page_config(page_title="Movie Copyright Shield", layout="centered")
+st.set_page_config(page_title="Rajneesh Movie Shield", layout="wide")
 
-st.title("🎬 Movie Copyright Shield")
-st.info("Mirror + Zoom + Top Blur Active")
+st.title("🚀 Rajneesh Bhaskar - Pro Movie Shield")
 
-uploaded_file = st.file_uploader("Apni Movie Select Karein", type=['mp4', 'mkv', 'avi'])
+# Logo file check
+LOGO_FILE = "1642.jpg"
 
-if uploaded_file is not None:
-    input_path = "input_video.mp4"
-    output_path = "cleaned_video.mp4"
+uploaded_file = st.file_uploader("Movie Upload Karein", type=['mp4', 'mkv'])
+
+if uploaded_file:
+    # --- Sidebar Controls ---
+    st.sidebar.header("⚙️ Smart Settings")
+    zoom_level = st.sidebar.slider("Zoom Level", 0.7, 1.0, 0.9)
+    blur_intensity = st.sidebar.slider("Blur Intensity", 5, 50, 20)
+    audio_pitch = st.sidebar.slider("Audio Speed", 1.0, 1.2, 1.05)
     
-    with open(input_path, "wb") as f:
-        f.write(uploaded_file.read())
+    # Text input for your name
+    wm_name = st.sidebar.text_input("Branding Name", "Rajneesh Bhaskar")
     
-    if st.button("Start Processing"):
-        with st.spinner("Processing... Ismein thoda samay lagega."):
+    if st.button("🚀 Process with Logo & Watermark"):
+        input_path = "input.mp4"
+        output_path = "output.mp4"
+        with open(input_path, "wb") as f: f.write(uploaded_file.read())
+        
+        with st.spinner("Logo aur Branding add ho rahi hai..."):
             
-            # Fix: Added quotes correctly for the 'enable' expression
-            video_filter = "hflip,crop=iw*0.9:ih*0.9,boxblur=20:enable='lt(y,ih/6)'"
+            # Base filters: Flip, Crop, Top Blur
+            vf_chain = f"hflip,crop=iw*{zoom_level}:ih*{zoom_level},boxblur={blur_intensity}:enable='lt(y,ih/6)'"
             
-            cmd = [
-                'ffmpeg', '-y', '-i', input_path,
-                '-vf', video_filter,
-                '-af', "atempo=1.05",
-                '-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '28', '-c:a', 'aac',
-                output_path
-            ]
+            # Adding Watermark Text (Rajneesh Bhaskar)
+            vf_chain += f",drawtext=text='{wm_name}':x=(w-text_w)/2:y=h-80:fontsize=45:fontcolor=white@0.6"
             
-            try:
-                result = subprocess.run(cmd, capture_output=True, text=True)
-                
-                if result.returncode != 0:
-                    st.error("FFmpeg Error detected. Trying simple mode...")
-                    # Agar upar wala fail ho toh bina blur ke try karega
-                    subprocess.run(['ffmpeg', '-y', '-i', input_path, '-vf', 'hflip,crop=iw*0.9:ih*0.9', '-af', 'atempo=1.05', output_path])
+            # Adding Image Logo (1642.jpg) if exists
+            if os.path.exists(LOGO_FILE):
+                # Logo ko chota karke (150 width) top right mein lagayega
+                cmd = [
+                    'ffmpeg', '-y', '-i', input_path, '-i', LOGO_FILE,
+                    '-filter_complex', 
+                    f"[0:v]{vf_chain}[vbase];[1:v]scale=150:-1[logo];[vbase][logo]overlay=main_w-overlay_w-20:20",
+                    '-af', f"atempo={audio_pitch}",
+                    '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '24', 
+                    output_path
+                ]
+            else:
+                st.warning("Logo file (1642.jpg) nahi mili, sirf text watermark lagega.")
+                cmd = ['ffmpeg', '-y', '-i', input_path, '-vf', vf_chain, '-af', f"atempo={audio_pitch}", output_path]
+            
+            subprocess.run(cmd)
+            
+            with open(output_path, "rb") as f:
+                st.download_button("✅ Download Branding Video", f, "rajneesh_branded.mp4")
+            
+            os.remove(input_path)
 
-                with open(output_path, "rb") as f:
-                    st.download_button(
-                        label="Download Cleaned Movie",
-                        data=f,
-                        file_name="cleaned_movie.mp4",
-                        mime="video/mp4"
-                    )
-                st.success("Kaam ho gaya! Video download karein.")
-                
-            except Exception as e:
-                st.error(f"System Error: {e}")
-            finally:
-                if os.path.exists(input_path): os.remove(input_path)
-                # output_path tab tak delete nahi karenge jab tak user download na kar le (ya session end na ho)
 
