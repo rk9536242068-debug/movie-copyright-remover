@@ -2,73 +2,65 @@ import streamlit as st
 import subprocess
 import os
 
-st.set_page_config(page_title="Rajneesh Movie Shield", layout="wide")
-st.title("🚀 Rajneesh Bhaskar - Pro Movie Shield")
+st.set_page_config(page_title="Rajneesh Pro Shield", layout="wide")
+st.title("🚀 Rajneesh Bhaskar - Ultimate Movie Shield")
 
-# Logo file path
 LOGO_FILE = "1642.jpg"
 
 uploaded_file = st.file_uploader("Movie Upload Karein", type=['mp4', 'mkv'])
 
 if uploaded_file:
-    st.sidebar.header("⚙️ Smart Settings")
-    zoom_level = st.sidebar.slider("Zoom Level", 0.8, 1.0, 0.9)
-    blur_intensity = st.sidebar.slider("Blur Intensity", 5, 50, 15)
-    audio_pitch = st.sidebar.slider("Audio Speed", 1.0, 1.1, 1.05)
-    wm_name = st.sidebar.text_input("Branding Name", "Rajneesh Bhaskar")
+    st.sidebar.header("⚙️ Adjustment Settings")
+    # Purane logo ko dhakne ke liye blur height badhao
+    blur_height = st.sidebar.slider("Purana Logo Blur Area (Height)", 0.1, 0.3, 0.18)
+    zoom_val = st.sidebar.slider("Zoom/Crop", 0.8, 1.0, 0.9)
     
-    if st.button("🚀 Process Fast"):
-        input_path = "input_video.mp4"
-        output_path = "cleaned_video.mp4"
+    if st.button("🚀 Process & Add My Branding"):
+        input_p = "input.mp4"
+        output_p = "output.mp4"
         
-        # File save karna
-        with open(input_path, "wb") as f:
+        with open(input_p, "wb") as f:
             f.write(uploaded_file.read())
         
-        with st.spinner("Processing... Ismein 1-2 minute lag sakte hain."):
-            # 1. Base Filter Chain
-            vf_chain = f"hflip,crop=iw*{zoom_level}:ih*{zoom_level},boxblur={blur_intensity}:enable='lt(y,ih/6)'"
-            # 2. Text Watermark
-            vf_chain += f",drawtext=text='{wm_name}':x=(w-text_w)/2:y=h-80:fontsize=40:fontcolor=white@0.5"
+        with st.spinner("Processing... Logo aur Naam add ho raha hai."):
+            # 1. Sabse pehle Mirror aur Crop (Zoom)
+            # 2. Phir Purana logo hatane ke liye bada Blur area
+            # 3. Phir aapka text 'Rajneesh Bhaskar'
+            base_vf = f"hflip,crop=iw*{zoom_val}:ih*{zoom_val},boxblur=25:enable='lt(y,ih*{blur_height})'"
+            my_name = "drawtext=text='Rajneesh Bhaskar':x=(w-text_w)/2:y=h-100:fontsize=50:fontcolor=yellow:shadowcolor=black:shadowx=2:shadowy=2"
             
-            # Check if Logo exists on GitHub server
             if os.path.exists(LOGO_FILE):
-                # Complex filter for Logo + Text + Video edits
+                # AGAR LOGO HAI: Filter Complex use karenge
+                # [0:v] video, [1:v] aapka logo
                 cmd = [
-                    'ffmpeg', '-y', '-i', input_path, '-i', LOGO_FILE,
-                    '-filter_complex', f"[0:v]{vf_chain}[vbase];[1:v]scale=120:-1[logo];[vbase][logo]overlay=W-w-20:20",
-                    '-af', f"atempo={audio_pitch}",
-                    '-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '28', '-threads', '0', '-c:a', 'aac',
-                    output_path
+                    'ffmpeg', '-y', '-i', input_p, '-i', LOGO_FILE,
+                    '-filter_complex', 
+                    f"[0:v]{base_vf},{my_name}[v1];[1:v]scale=150:-1[logo];[v1][logo]overlay=W-w-30:30",
+                    '-af', "atempo=1.05",
+                    '-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '24', '-c:a', 'aac',
+                    output_p
                 ]
             else:
-                st.warning("⚠️ Logo file server par nahi mili. Bina logo ke process ho raha hai.")
+                st.warning("Logo file (1642.jpg) nahi mili! Sirf naam likha jayega.")
                 cmd = [
-                    'ffmpeg', '-y', '-i', input_path,
-                    '-vf', vf_chain,
-                    '-af', f"atempo={audio_pitch}",
-                    '-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '28', '-threads', '0', '-c:a', 'aac',
-                    output_path
+                    'ffmpeg', '-y', '-i', input_p,
+                    '-vf', f"{base_vf},{my_name}",
+                    '-af', "atempo=1.05",
+                    '-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '24', '-c:a', 'aac',
+                    output_p
                 ]
             
-            try:
-                # Process run karna aur error capture karna
-                result = subprocess.run(cmd, capture_output=True, text=True)
-                
-                # Agar output file ban gayi hai
-                if os.path.exists(output_path):
-                    st.success("✅ Video taiyar hai!")
-                    with open(output_path, "rb") as f:
-                        st.download_button("📥 Download Branded Video", f, "rajneesh_video.mp4")
-                else:
-                    st.error("❌ Processing fail ho gayi.")
-                    st.code(result.stderr) # Ye dikhayega ki FFmpeg kyu ruka
-                    
-            except Exception as e:
-                st.error(f"System Error: {e}")
-            finally:
-                # Purani files delete karna taaki memory saaf rahe
-                if os.path.exists(input_path): os.remove(input_path)
+            res = subprocess.run(cmd, capture_output=True, text=True)
+            
+            if os.path.exists(output_p):
+                st.success("Branding Successful!")
+                with open(output_p, "rb") as f:
+                    st.download_button("📥 Download Branded Video", f, "rajneesh_final.mp4")
+            else:
+                st.error("Error: Video process nahi hui.")
+                st.code(res.stderr)
+        
+        if os.path.exists(input_p): os.remove(input_p)
 
 
 
