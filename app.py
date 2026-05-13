@@ -11,7 +11,6 @@ uploaded_file = st.file_uploader("Movie Upload Karein", type=['mp4', 'mkv'])
 
 if uploaded_file:
     st.sidebar.header("⚙️ Adjustment Settings")
-    # Purane logo ko dhakne ke liye blur height badhao
     blur_height = st.sidebar.slider("Purana Logo Blur Area (Height)", 0.1, 0.3, 0.18)
     zoom_val = st.sidebar.slider("Zoom/Crop", 0.8, 1.0, 0.9)
     
@@ -23,15 +22,11 @@ if uploaded_file:
             f.write(uploaded_file.read())
         
         with st.spinner("Processing... Logo aur Naam add ho raha hai."):
-            # 1. Sabse pehle Mirror aur Crop (Zoom)
-            # 2. Phir Purana logo hatane ke liye bada Blur area
-            # 3. Phir aapka text 'Rajneesh Bhaskar'
-            base_vf = f"hflip,crop=iw*{zoom_val}:ih*{zoom_val},boxblur=25:enable='lt(y,ih*{blur_height})'"
+            # FIX: Double quotes used for 'enable' to avoid FFmpeg parsing error
+            base_vf = f'hflip,crop=iw*{zoom_val}:ih*{zoom_val},boxblur=25:enable="lt(y,ih*{blur_height})"'
             my_name = "drawtext=text='Rajneesh Bhaskar':x=(w-text_w)/2:y=h-100:fontsize=50:fontcolor=yellow:shadowcolor=black:shadowx=2:shadowy=2"
             
             if os.path.exists(LOGO_FILE):
-                # AGAR LOGO HAI: Filter Complex use karenge
-                # [0:v] video, [1:v] aapka logo
                 cmd = [
                     'ffmpeg', '-y', '-i', input_p, '-i', LOGO_FILE,
                     '-filter_complex', 
@@ -41,7 +36,7 @@ if uploaded_file:
                     output_p
                 ]
             else:
-                st.warning("Logo file (1642.jpg) nahi mili! Sirf naam likha jayega.")
+                st.warning("Logo file (1642.jpg) nahi mili!")
                 cmd = [
                     'ffmpeg', '-y', '-i', input_p,
                     '-vf', f"{base_vf},{my_name}",
@@ -61,6 +56,3 @@ if uploaded_file:
                 st.code(res.stderr)
         
         if os.path.exists(input_p): os.remove(input_p)
-
-
-
