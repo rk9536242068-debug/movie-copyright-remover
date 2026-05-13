@@ -2,27 +2,55 @@ import streamlit as st
 import subprocess
 import os
 
-st.set_page_config(page_title="Movie Copyright Fixer", layout="wide")
-st.title("🎬 Full Movie Copyright Remover")
-st.info("Ye cloud par process hoga, isliye mobile crash nahi hoga.")
+st.set_page_config(page_title="Movie Copyright Shield", layout="centered")
+
+st.title("🎬 Movie Copyright Shield")
+st.info("Ismein Flip + Crop + Logo Blur sab ek saath hoga.")
 
 uploaded_file = st.file_uploader("Apni Movie Select Karein", type=['mp4', 'mkv', 'avi'])
 
-if uploaded_file:
-    with open("input.mp4", "wb") as f:
+if uploaded_file is not None:
+    input_path = "input_video.mp4"
+    output_path = "cleaned_video.mp4"
+    
+    with open(input_path, "wb") as f:
         f.write(uploaded_file.read())
-    st.success("Upload Complete! Ab niche button dabayein.")
-
-    if st.button("Start Processing (Full Movie)"):
-        with st.spinner("Processing... Movie badi hai toh 15-20 min lag sakte hain."):
-            output = "final_movie.mp4"
-            # Command for Full Movies
-            cmd = f'ffmpeg -y -i input.mp4 -vf "hflip,scale=1.1*iw:-1,crop=iw/1.1:ih/1.1" -af "asetrate=44100*1.05,atempo=1/1.05" -c:v libx264 -preset ultrafast -crf 28 {output}'
+    
+    if st.button("Start Processing"):
+        with st.spinner("Processing... Ismein thoda samay lagega."):
+            # Command explain: 
+            # hflip = Mirror
+            # crop = Zoom/Crop
+            # delogo = Logo area ko blur karna (x, y, w, h settings)
+            filters = (
+                "hflip,"
+                "crop=iw*0.9:ih*0.9,"
+                "delogo=x=0:y=0:w=iw/4:h=ih/8:band=1," # Left Top Blur
+                "delogo=x=iw-iw/4:y=0:w=iw/4:h=ih/8:band=1" # Right Top Blur
+            )
             
-            os.system(cmd)
+            cmd = [
+                'ffmpeg', '-y', '-i', input_path,
+                '-vf', filters,
+                '-af', "atempo=1.05",
+                '-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '28', '-c:a', 'aac',
+                output_path
+            ]
             
-            if os.path.exists(output):
-                with open(output, "rb") as file:
-                    st.download_button("⬇️ Download Full Movie", file, file_name="copyright_free.mp4")
-            else:
-                st.error("Processing fail ho gayi. File size check karein.")
+            try:
+                subprocess.run(cmd, check=True)
+                
+                with open(output_path, "rb") as f:
+                    st.download_button(
+                        label="Download Cleaned Movie",
+                        data=f,
+                        file_name="cleaned_movie.mp4",
+                        mime="video/mp4"
+                    )
+                st.success("Kaam ho gaya! Dono corners blur ho gaye hain.")
+                
+            except Exception as e:
+                st.error(f"Error: {e}")
+            finally:
+                if os.path.exists(input_path): os.remove(input_path)
+                if os.path.exists(output_path): os.remove(output_path)
