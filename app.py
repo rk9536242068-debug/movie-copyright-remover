@@ -2,72 +2,221 @@ import streamlit as st
 import subprocess
 import os
 
+# =========================
+# PAGE SETTINGS
+# =========================
 st.set_page_config(page_title="Rajneesh Movie Pro", layout="wide")
-st.title("🎬 Rajneesh Bhaskar - Professional Shorts Creator")
 
-# Logo file check
+st.title("🎬 Rajneesh Bhaskar - Professional Shorts Creator")
+st.write("Upload movie/video and create cinematic YouTube Shorts automatically.")
+
+# =========================
+# FILES
+# =========================
 LOGO_FILE = "1642.jpg"
 
-uploaded_file = st.file_uploader("Movie Upload Karein", type=['mp4', 'mkv'])
+uploaded_file = st.file_uploader(
+    "📤 Movie Upload Karein",
+    type=["mp4", "mkv", "mov", "avi"]
+)
 
+# =========================
+# SIDEBAR SETTINGS
+# =========================
 if uploaded_file:
-    st.sidebar.header("✍️ Customize Your Hook")
-    # Yahan aap apni pasand ki lines likh sakte hain
-    line1 = st.sidebar.text_input("Top Line (Yellow Text)", "Yahan Pehli Line Likhein")
-    line2 = st.sidebar.text_input("Bottom Line (White Text)", "Yahan Doosri Line Likhein")
-    
-    # Ultra HD Quality Settings
-    st.sidebar.subheader("💎 Quality Settings")
-    crf_val = st.sidebar.select_slider("Select Video Quality", options=["Standard", "High", "Ultra Pro"], value="High")
-    crf_map = {"Standard": "22", "High": "18", "Ultra Pro": "16"}
 
-    if st.button("🚀 Generate High-Quality Short"):
-        input_p = "input_temp.mp4"
-        output_p = "rajneesh_final_short.mp4"
-        
-        with open(input_p, "wb") as f:
+    st.sidebar.header("✍️ Customize Your Hook")
+
+    line1 = st.sidebar.text_input(
+        "Top Line (Yellow Text)",
+        "Yahan Pehli Line Likhein"
+    )
+
+    line2 = st.sidebar.text_input(
+        "Bottom Line (White Text)",
+        "Yahan Doosri Line Likhein"
+    )
+
+    st.sidebar.subheader("💎 Video Quality")
+
+    quality = st.sidebar.select_slider(
+        "Select Quality",
+        options=["Standard", "High", "Ultra Pro"],
+        value="High"
+    )
+
+    crf_map = {
+        "Standard": "24",
+        "High": "20",
+        "Ultra Pro": "16"
+    }
+
+    add_speed = st.sidebar.checkbox(
+        "⚡ Slight Speed Boost",
+        value=True
+    )
+
+    # =========================
+    # GENERATE BUTTON
+    # =========================
+    if st.button("🚀 Generate Professional Short"):
+
+        input_video = "input_temp.mp4"
+        output_video = "rajneesh_final_short.mp4"
+
+        # Save uploaded video
+        with open(input_video, "wb") as f:
             f.write(uploaded_file.read())
-        
-        with st.spinner("Professional layout taiyar ho raha hai..."):
+
+        with st.spinner("🎞️ Professional Short Taiyar Ho Raha Hai..."):
+
             font_path = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
-            
-            # Professional 9:16 Layout Filter
-            # 1. Video mirror (Hflip)
-            # 2. HD Scaling (720 width)
-            # 3. Padding (Black Bars Top & Bottom)
-            # 4. Two-line Text (Yellow & White) with clean shadows
+
+            # =========================
+            # VIDEO FILTERS
+            # =========================
+
             vf_filters = (
-                f"hflip,scale=720:-1,pad=720:1280:(ow-iw)/2:(oh-ih)/2:black,"
-                f"drawtext=text='{line1}':fontfile={font_path}:fontcolor=yellow:fontsize=42:x=(w-text_w)/2:y=130:shadowcolor=black:shadowx=2:shadowy=2,"
-                f"drawtext=text='{line2}':fontfile={font_path}:fontcolor=white:fontsize=42:x=(w-text_w)/2:y=195:shadowcolor=black:shadowx=2:shadowy=2"
+                f"scale=720:1280:force_original_aspect_ratio=increase,"
+                f"crop=720:1280,"
+
+                # Top cinematic black box
+                f"drawbox=x=0:y=0:w=720:h=250:color=black:t=fill,"
+
+                # Yellow text
+                f"drawtext=text='{line1}':"
+                f"fontfile={font_path}:"
+                f"fontcolor=#ffcc00:"
+                f"fontsize=48:"
+                f"x=(w-text_w)/2:"
+                f"y=65:"
+                f"borderw=4:"
+                f"bordercolor=black,"
+
+                # White text
+                f"drawtext=text='{line2}':"
+                f"fontfile={font_path}:"
+                f"fontcolor=white:"
+                f"fontsize=44:"
+                f"x=(w-text_w)/2:"
+                f"y=140:"
+                f"borderw=4:"
+                f"bordercolor=black,"
+
+                # Bottom branding
+                f"drawtext=text='Rajneesh Bhaskar':"
+                f"fontfile={font_path}:"
+                f"fontcolor=white@0.40:"
+                f"fontsize=26:"
+                f"x=(w-text_w)/2:"
+                f"y=h-80"
             )
-            
-            # Bottom Branding (Optional)
-            footer = f"drawtext=text='Rajneesh Bhaskar':fontfile={font_path}:fontcolor=white@0.4:fontsize=26:x=(w-text_w)/2:y=h-120"
+
+            # =========================
+            # AUDIO SPEED
+            # =========================
+
+            audio_filter = "atempo=1.05" if add_speed else "atempo=1.0"
+
+            # =========================
+            # LOGO EFFECT
+            # =========================
 
             if os.path.exists(LOGO_FILE):
-                # Circular professional logo
-                logo_f = "scale=80:80,format=rgba,geq=r='r(X,Y)':a='if(gt(hypot(X-W/2,Y-H/2),W/2),0,255)'"
+
+                logo_filter = (
+                    "scale=90:90,"
+                    "format=rgba,"
+                    "geq=r='r(X,Y)':"
+                    "a='if(gt(hypot(X-W/2,Y-H/2),W/2),0,255)'"
+                )
+
                 cmd = [
-                    'ffmpeg', '-y', '-i', input_p, '-i', LOGO_FILE,
-                    '-filter_complex', f"[0:v]{vf_filters},{footer}[v1];[1:v]{logo_f}[logo];[v1][logo]overlay=W-w-40:40",
-                    '-af', "atempo=1.05",
-                    '-c:v', 'libx264', '-preset', 'slow', '-crf', crf_map[crf_val], 
-                    '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-b:a', '192k',
-                    output_p
+                    "ffmpeg",
+                    "-y",
+                    "-i", input_video,
+                    "-i", LOGO_FILE,
+
+                    "-filter_complex",
+                    f"[0:v]{vf_filters}[v1];"
+                    f"[1:v]{logo_filter}[logo];"
+                    f"[v1][logo]overlay=W-w-30:30",
+
+                    "-af", audio_filter,
+
+                    "-c:v", "libx264",
+                    "-preset", "slow",
+                    "-crf", crf_map[quality],
+
+                    "-pix_fmt", "yuv420p",
+
+                    "-c:a", "aac",
+                    "-b:a", "192k",
+
+                    output_video
                 ]
+
             else:
-                cmd = ['ffmpeg', '-y', '-i', input_p, '-vf', f"{vf_filters},{footer}", '-af', "atempo=1.05", '-c:v', 'libx264', '-preset', 'slow', '-crf', crf_map[crf_val], output_p]
-            
-            res = subprocess.run(cmd, capture_output=True, text=True)
-            
-            if os.path.exists(output_p):
+
+                cmd = [
+                    "ffmpeg",
+                    "-y",
+                    "-i", input_video,
+
+                    "-vf", vf_filters,
+
+                    "-af", audio_filter,
+
+                    "-c:v", "libx264",
+                    "-preset", "slow",
+                    "-crf", crf_map[quality],
+
+                    "-pix_fmt", "yuv420p",
+
+                    "-c:a", "aac",
+                    "-b:a", "192k",
+
+                    output_video
+                ]
+
+            # =========================
+            # RUN FFMPEG
+            # =========================
+
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True
+            )
+
+            # =========================
+            # OUTPUT
+            # =========================
+
+            if os.path.exists(output_video):
+
                 st.success("✅ Professional Short Successfully Generated!")
-                with open(output_p, "rb") as f:
-                    st.download_button("📥 Download HQ Video", f, "rajneesh_pro_short.mp4")
+
+                st.video(output_video)
+
+                with open(output_video, "rb") as f:
+
+                    st.download_button(
+                        "📥 Download HQ Video",
+                        f,
+                        file_name="rajneesh_pro_short.mp4"
+                    )
+
             else:
-                st.error("Error in processing!")
-                st.code(res.stderr)
-        
-        if os.path.exists(input_p): os.remove(input_p)
+
+                st.error("❌ Error in Video Processing")
+
+                st.code(result.stderr)
+
+        # =========================
+        # CLEANUP
+        # =========================
+
+        if os.path.exists(input_video):
+            os.remove(input_video)
 
