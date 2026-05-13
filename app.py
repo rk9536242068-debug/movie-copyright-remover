@@ -2,38 +2,47 @@ import streamlit as st
 import subprocess
 import os
 
-# =========================
+# =========================================
 # PAGE SETTINGS
-# =========================
-st.set_page_config(page_title="Rajneesh Movie Pro", layout="wide")
+# =========================================
+
+st.set_page_config(
+    page_title="Rajneesh Bhaskar Shorts Creator",
+    layout="wide"
+)
 
 st.title("🎬 Rajneesh Bhaskar - Professional Shorts Creator")
-st.write("Upload movie/video and create cinematic YouTube Shorts automatically.")
 
-# =========================
-# FILES
-# =========================
+# =========================================
+# LOGO FILE
+# =========================================
+
 LOGO_FILE = "1642.jpg"
 
+# =========================================
+# VIDEO UPLOAD
+# =========================================
+
 uploaded_file = st.file_uploader(
-    "📤 Movie Upload Karein",
+    "📤 Upload Movie / Video",
     type=["mp4", "mkv", "mov", "avi"]
 )
 
-# =========================
-# SIDEBAR SETTINGS
-# =========================
+# =========================================
+# MAIN APP
+# =========================================
+
 if uploaded_file:
 
-    st.sidebar.header("✍️ Customize Your Hook")
+    st.sidebar.header("✍️ Hook Text Settings")
 
     line1 = st.sidebar.text_input(
-        "Top Line (Yellow Text)",
+        "Yellow Hook Line",
         "Yahan Pehli Line Likhein"
     )
 
     line2 = st.sidebar.text_input(
-        "Bottom Line (White Text)",
+        "White Hook Line",
         "Yahan Doosri Line Likhein"
     )
 
@@ -51,14 +60,15 @@ if uploaded_file:
         "Ultra Pro": "16"
     }
 
-    add_speed = st.sidebar.checkbox(
+    speed_boost = st.sidebar.checkbox(
         "⚡ Slight Speed Boost",
         value=True
     )
 
-    # =========================
+    # =========================================
     # GENERATE BUTTON
-    # =========================
+    # =========================================
+
     if st.button("🚀 Generate Professional Short"):
 
         input_video = "input_temp.mp4"
@@ -68,64 +78,103 @@ if uploaded_file:
         with open(input_video, "wb") as f:
             f.write(uploaded_file.read())
 
-        with st.spinner("🎞️ Professional Short Taiyar Ho Raha Hai..."):
+        with st.spinner("🎞️ Professional Short Ban Raha Hai..."):
 
             font_path = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
 
-            # =========================
+            # =========================================
             # VIDEO FILTERS
-            # =========================
+            # =========================================
 
             vf_filters = (
+
+                # Full vertical crop
                 f"scale=720:1280:force_original_aspect_ratio=increase,"
                 f"crop=720:1280,"
 
-                # Top cinematic black box
-                f"drawbox=x=0:y=0:w=720:h=250:color=black:t=fill,"
+                # =========================================
+                # TOP BLACK BOX
+                # =========================================
 
-                # Yellow text
+                f"drawbox=x=0:y=0:w=720:h=240:color=black:t=fill,"
+
+                # =========================================
+                # BOTTOM BLACK BOX
+                # =========================================
+
+                f"drawbox=x=0:y=1080:w=720:h=200:color=black:t=fill,"
+
+                # =========================================
+                # YELLOW TOP TEXT
+                # =========================================
+
                 f"drawtext=text='{line1}':"
                 f"fontfile={font_path}:"
                 f"fontcolor=#ffcc00:"
-                f"fontsize=48:"
+                f"fontsize=46:"
                 f"x=(w-text_w)/2:"
-                f"y=65:"
+                f"y=60:"
                 f"borderw=4:"
                 f"bordercolor=black,"
 
-                # White text
+                # =========================================
+                # WHITE SECOND TEXT
+                # =========================================
+
                 f"drawtext=text='{line2}':"
                 f"fontfile={font_path}:"
                 f"fontcolor=white:"
-                f"fontsize=44:"
+                f"fontsize=42:"
                 f"x=(w-text_w)/2:"
-                f"y=140:"
+                f"y=130:"
                 f"borderw=4:"
                 f"bordercolor=black,"
 
-                # Bottom branding
+                # =========================================
+                # REMOVE OLD CHANNEL NAME AREA
+                # =========================================
+
+                f"drawbox=x=0:y=930:w=720:h=150:color=black:t=fill,"
+
+                # =========================================
+                # YOUR CHANNEL NAME
+                # =========================================
+
                 f"drawtext=text='Rajneesh Bhaskar':"
                 f"fontfile={font_path}:"
-                f"fontcolor=white@0.40:"
-                f"fontsize=26:"
+                f"fontcolor=white:"
+                f"fontsize=58:"
                 f"x=(w-text_w)/2:"
-                f"y=h-80"
+                f"y=960:"
+                f"borderw=5:"
+                f"bordercolor=black,"
+
+                # =========================================
+                # FOOTER WATERMARK
+                # =========================================
+
+                f"drawtext=text='@rajneesh_pro_shorts':"
+                f"fontfile={font_path}:"
+                f"fontcolor=white@0.35:"
+                f"fontsize=24:"
+                f"x=(w-text_w)/2:"
+                f"y=h-45"
             )
 
-            # =========================
+            # =========================================
             # AUDIO SPEED
-            # =========================
+            # =========================================
 
-            audio_filter = "atempo=1.05" if add_speed else "atempo=1.0"
+            audio_filter = "atempo=1.05" if speed_boost else "atempo=1.0"
 
-            # =========================
-            # LOGO EFFECT
-            # =========================
+            # =========================================
+            # LOGO FILTER
+            # =========================================
 
             if os.path.exists(LOGO_FILE):
 
                 logo_filter = (
-                    "scale=90:90,"
+                    "scale=85:85,"
                     "format=rgba,"
                     "geq=r='r(X,Y)':"
                     "a='if(gt(hypot(X-W/2,Y-H/2),W/2),0,255)'"
@@ -140,7 +189,7 @@ if uploaded_file:
                     "-filter_complex",
                     f"[0:v]{vf_filters}[v1];"
                     f"[1:v]{logo_filter}[logo];"
-                    f"[v1][logo]overlay=W-w-30:30",
+                    f"[v1][logo]overlay=W-w-20:20",
 
                     "-af", audio_filter,
 
@@ -179,9 +228,9 @@ if uploaded_file:
                     output_video
                 ]
 
-            # =========================
+            # =========================================
             # RUN FFMPEG
-            # =========================
+            # =========================================
 
             result = subprocess.run(
                 cmd,
@@ -189,9 +238,9 @@ if uploaded_file:
                 text=True
             )
 
-            # =========================
-            # OUTPUT
-            # =========================
+            # =========================================
+            # SUCCESS OUTPUT
+            # =========================================
 
             if os.path.exists(output_video):
 
@@ -209,13 +258,13 @@ if uploaded_file:
 
             else:
 
-                st.error("❌ Error in Video Processing")
+                st.error("❌ Video Processing Error")
 
                 st.code(result.stderr)
 
-        # =========================
-        # CLEANUP
-        # =========================
+        # =========================================
+        # CLEAN TEMP FILE
+        # =========================================
 
         if os.path.exists(input_video):
             os.remove(input_video)
