@@ -8,7 +8,7 @@ import tempfile
 # ─────────────────────────────────────────────
 st.set_page_config(
     page_title="Rajneesh Logo Shield Pro",
-    page_icon="🛡️",
+    page_icon=":shield:",
     layout="wide",
 )
 
@@ -87,7 +87,7 @@ def build_ffmpeg_cmd(
     footer: str,
     speed: float,
     font_path: str,
-    logo_path: str | None,
+    logo_path,
 ) -> list[str]:
     """Build the ffmpeg command based on user settings."""
 
@@ -293,4 +293,4 @@ else:
 #  FOOTER
 # ─────────────────────────────────────────────
 st.divider()
-st.caption("🛡️ Rajneesh Bhaskar — Professional
+st.caption("Rajneesh Bhaskar | Professional Video
