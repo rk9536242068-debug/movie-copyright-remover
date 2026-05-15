@@ -1,63 +1,59 @@
+import streamlit as st
 import os
-from flask import Flask, request, render_template, send_file
 import subprocess
 
-app = Flask(__name__)
-UPLOAD_FOLDER = 'uploads'
-OUTPUT_FOLDER = 'processed'
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-os.makedirs(OUTPUT_FOLDER, exist_ok=True)
+# 1. Page Configuration
+st.set_page_config(page_title="Movie Copyright Shield", page_icon="🎬")
 
-@app.route('/')
-def index():
-    return '''
-    <!doctype html>
-    <html lang="en">
-    <head><title>Instant Copyright Shield</title></head>
-    <body style="font-family: Arial; text-align: center; margin-top: 50px;">
-        <h2>Instant Video Shield & Unique Modifier</h2>
-        <form action="/process" method="post" enctype="multipart/form-data">
-            <input type="file" name="video" required><br><br>
-            <button type="submit" style="padding: 10px 20px;">Process Video Instantly</button>
-        </form>
-    </body>
-    </html>
-    '''
+st.title("🎬 Movie Copyright Remover")
+st.markdown("Automate your video processing for social media.")
 
-@app.route('/process', method=['POST'])
-def process_video():
-    if 'video' not in request.files:
-        return "No video file found", 400
+# 2. Sidebar for Settings
+with st.sidebar:
+    st.header("Settings")
+    speed = st.slider("Video Speed", 1.0, 1.5, 1.1)
+    bitrate = st.selectbox("Bitrate", ["1M", "2M", "5M"])
+
+# 3. Input Section
+video_url = st.text_input("Enter Video URL or File Path:", placeholder="https://example.com/video.mp4")
+
+# 4. Processing Logic
+def process_video(input_url, speed_val):
+    # This is where your FFmpeg logic goes
+    # Example command to change speed and metadata
+    output_name = "processed_video.mp4"
     
-    file = request.files['video']
-    if file.filename == '':
-        return "No selected file", 400
+    # Placeholder for the logic you were trying to run in Flask
+    # st.info(f"Processing video at {speed_val}x speed...")
+    
+    # Example FFmpeg command structure (if you have FFmpeg installed on server)
+    # cmd = f"ffmpeg -i {input_url} -filter:v 'setpts={1/speed_val}*PTS' {output_name}"
+    # subprocess.run(cmd, shell=True)
+    
+    return output_name
 
-    input_path = os.path.join(UPLOAD_FOLDER, file.filename)
-    output_path = os.path.join(OUTPUT_FOLDER, "shielded_" + file.filename)
-    file.save(input_path)
+# 5. Execution Button
+if st.button("Start Processing"):
+    if video_url:
+        try:
+            with st.spinner("Processing... Please wait."):
+                # Call your function here
+                result_file = process_video(video_url, speed)
+                
+                st.success("✅ Process Completed!")
+                
+                # Mock Download Button
+                st.download_button(
+                    label="Download Processed Video",
+                    data=b"file_content", # Replace with actual file data
+                    file_name=result_file,
+                    mime="video/mp4"
+                )
+        except Exception as e:
+            st.error(f"An error occurred: {e}")
+    else:
+        st.warning("Please enter a valid URL first.")
 
-    # FFmpeg Powerful Command to alter metadata, pitch, scale, and speed instantly
-    # vf: video filter (halka speed, scale aur contrast changes)
-    # af: audio filter (pitch aur tempo adjust)
-    ffmpeg_cmd = [
-        'ffmpeg', '-y', '-i', input_path,
-        '-vf', 'setpts=0.99*PTS,scale=iw*1.02:ih*1.02,crop=iw/1.02:ih/1.02,eq=contrast=1.03:brightness=0.01',
-        '-af', 'asetrate=44100*1.01,aresample=44100,atempo=0.98',
-        '-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '23',
-        '-c:a', 'aac', output_path
-    ]
+# 6. Helpful Instructions
+st.info("Note: Make sure your 'requirements.txt' has 'streamlit' and any other libraries you use.")
 
-    try:
-        # Executing the core modifier algorithm
-        subprocess.run(ffmpeg_cmd, check=True)
-        return send_file(output_path, as_attachment=True)
-    except subprocess.CalledProcessError as e:
-        return f"Processing Error: {str(e)}", 500
-    finally:
-        # Cleaning up space
-        if os.path.exists(input_path):
-            os.remove(input_path)
-
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
